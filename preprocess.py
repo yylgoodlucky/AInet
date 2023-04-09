@@ -17,8 +17,8 @@ if not os.path.isfile('./face_detection/detection/sfd/s3fd.pth'):
     raise FileNotFoundError('Save the s3fd model to face_detection/detection/sfd/s3fd.pth \
                             before running this script!')
     
-fa = face_detection.FaceAlignment(face_detection.LandmarksType._2D, flip_input=False,
-                                   device='cuda')
+fa = face_detection.FaceAlignment(face_detection.LandmarksType._2D, flip_input=False, device='cuda')
+
 audio_template = 'ffmpeg -loglevel panic -y -i {} -strict -2 {}'
 video_template = 'ffmpeg -y -i {} -c:v libx264 -crf 18 -c:a aac -r 25 {}'
 

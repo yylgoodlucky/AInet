@@ -32,9 +32,9 @@ class Conv2dTranspose(nn.Module):
         out = self.conv_block(x)
         return self.act(out)
 
-class AInet(nn.Module):
+class AInet_Generator(nn.Module):
     def __init__(self):
-        super(AInet, self).__init__()
+        super(AInet_Generator, self).__init__()
         self.faceid_encoder = nn.ModuleList([
             Conv2d(3, 16, kernel_size=3, stride=2, padding=1),   # b,16,128    7
             Conv2d(16, 32, kernel_size=3, stride=2, padding=1),  # b,32,64      6
@@ -70,7 +70,7 @@ class AInet(nn.Module):
     def forward(self, face_id, audio):
         ## in_faceid b,3,256,256
         ## in_audio b,t,28,12
-        b,t = audio.shape[0], audio.shape[1]
+        b, t = audio.shape[0], audio.shape[1]
         lstm_in = audio.reshape(b, t, -1)
         
         hidden = (torch.autograd.Variable(torch.zeros(3, b, 256).cuda()),
@@ -110,9 +110,51 @@ class AInet(nn.Module):
         out = self.out_block(x)
         out = out.reshape(b, 5, 3, 256, 256)
         
-        return out 
+        return out
     
-            
+
+class AInet_Discriminator(nn.Module):
+    def __init__(self, input_nc, ndf=64, norm_layer=nn.BatchNorm2d, use_sigmoid=False):
+        super(AInet_Discriminator, self).__init__()
+        
+        self.net = [
+            nn.Conv2d(input_nc, ndf, kernel_size=1, stride=1, padding=0),
+            nn.LeakyReLU(0.2, True),
+            nn.Conv2d(ndf, ndf * 2, kernel_size=1, stride=1, padding=0),
+            norm_layer(ndf * 2),
+            nn.LeakyReLU(0.2, True),
+            nn.Conv2d(ndf * 2, 1, kernel_size=1, stride=1, padding=0)]
+
+        if use_sigmoid:
+            self.net.append(nn.Sigmoid())
+        
+        self.net = nn.Sequential(*self.net)
+        
+    def forward(self, input):
+        return self.net(input)
+    
+    
+class GANLoss(nn.Module):
+    def __init__(self, use_lsgan=True, target_real_label=1.0, target_fake_label=0.0):
+        super(GANLoss, self).__init__()
+        self.register_buffer('real_label', torch.tensor(target_real_label))
+        self.register_buffer('fake_label', torch.tensor(target_fake_label))
+        if use_lsgan:
+            self.loss = nn.MSELoss()
+        else:
+            self.loss = nn.BCELoss()
+
+    def get_target_tensor(self, input, target_is_real):
+        if target_is_real:
+            target_tensor = self.real_label
+        else:
+            target_tensor = self.fake_label
+        return target_tensor.expand_as(input)
+
+    def __call__(self, input, target_is_real):
+        target_tensor = self.get_target_tensor(input, target_is_real)
+        return self.loss(input, target_tensor)
+
         
         
         

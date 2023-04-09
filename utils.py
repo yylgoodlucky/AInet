@@ -6,7 +6,12 @@ import python_speech_features
 import torch
 import face_alignment
 from matplotlib import pyplot as plt
-    
+
+def trans_to_cuda(variable):
+    if torch.cuda.is_available():
+        return variable.cuda()
+    else:
+        return variable
 
 def plot_landmarks(landmark, image, save_path, num):
     # try:
